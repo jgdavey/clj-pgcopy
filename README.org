@@ -1,0 +1,76 @@
+#+TITLE: clj-pgcopy
+
+Import data into postgres quickly, implemented using postgresql's
+=COPY= in binary format.
+
+* Input Type mapping
+
+** Basic type mapping
+
+| JVM type       | Postgres type                 |
+|----------------+-------------------------------|
+| Short          | int2 (aka smallint)           |
+| Integer        | int4 (aka integer)            |
+| Long           | int8 (aka bigint)             |
+| Float          | float4 (aka real)             |
+| Double         | float8 (aka double presicion) |
+| BigDecimal     | numeric/decimal               |
+| Boolean        | boolean                       |
+| String         | text/varchar/char             |
+| java.util.UUID | uuid                          |
+
+** Date-related mappings
+
+| JVM type                     | Postgres type |
+|------------------------------+---------------|
+| java.sql.Date                | date          |
+| java.time.LocalDate          | date          |
+| java.util.Date               | timestamp[tz] |
+| java.sql.Timestamp           | timestamp[tz] |
+| java.time.Instant            | timestamp[tz] |
+| java.time.ZonedDateTime      | timestamp[tz] |
+| java.time.OffsetDatetime     | timestamp[tz] |
+| org.postgres.util.PGInterval | interval      |
+
+** Geometric mappings
+
+| JVM type                         | Postgres type |
+|----------------------------------+---------------|
+| org.postgres.geometric.PGpoint   | point         |
+| org.postgres.geometric.PGline    | line          |
+| org.postgres.geometric.PGpath    | path          |
+| org.postgres.geometric.PGbox     | box           |
+| org.postgres.geometric.PGcircle  | circle        |
+| org.postgres.geometric.PGpolygon | polygon       |
+
+Things that are String-like, or serialized in string form, should work
+using the String -> text mapping. An exception is the =jsonb= type,
+because the binary format requires a version signifier. Wrapping a
+JSON string in a =JsonB= handles that, which is provided by the
+library.
+
+** Arrays
+
+Impemented for the following JVM-typed arrays for:
+
+| JVM type         | Postgres type                     |
+|------------------+-----------------------------------|
+| int[]            | int4[] (aka integer[])            |
+| long[]           | int8[] (aka bigint[])             |
+| float[]          | float4[] (aka real[])             |
+| double[]         | float8[] (aka double precision[]) |
+| byte[]           | bytea                             |
+| String[]         | text[] (or varchar)               |
+| java.util.UUID[] | uuid[]                            |
+
+
+Currently, only 1-dimensional Postgres arrays are supported.
+
+** TODO
+
+- hstore (wrapper?)
+- inet, cidr, macaddr, macaddr8
+- bit strings
+- composite types
+- range types
+- more array types? (date, timestamp, etc)
