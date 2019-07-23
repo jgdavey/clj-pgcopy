@@ -9,4 +9,5 @@
            {:extra-paths ["dev" "test"]
             :extra-deps {org.clojure/tools.namespace {:mvn/version "0.3.0"}
                          org.clojure/java.jdbc {:mvn/version "0.7.9"}}
-            :jvm-opts ["-XX:-OmitStackTraceInFastThrow"]}}}
+            :jvm-opts ["-XX:-OmitStackTraceInFastThrow"]}
+           :deploy {:extra-deps {deps-deploy {:mvn/version "RELEASE"}}}}}
