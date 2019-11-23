@@ -35,7 +35,7 @@
 (use-fixtures :each
   (fn use-utc [f]
     (let [original (TimeZone/getDefault)]
-      (TimeZone/setDefault (TimeZone/getTimeZone "UTC"))
+      (TimeZone/setDefault (TimeZone/getTimeZone "Z"))
       (f)
       (TimeZone/setDefault original)))
   (fn create-test-tables [f]
