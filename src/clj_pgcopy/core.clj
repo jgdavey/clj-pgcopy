@@ -21,7 +21,9 @@
                                      PGpoint)
            (org.postgresql.util PGInterval)
            (org.postgresql.copy CopyManager
+                                CopyIn
                                 PGCopyOutputStream)
+           (org.postgresql.jdbc PgConnection)
            (org.postgresql.core BaseConnection)))
 
 (set! *warn-on-reflection* true)
@@ -109,8 +111,7 @@
   (pg-type [_] :bytea)
   (write-to [ba ^DataOutputStream out]
     (.writeInt out (count ba))
-    (doseq [b ba]
-      (.writeByte out b)))
+    (.write out ^bytes ba))
 
   String
   (pg-type [_] :text)
@@ -364,8 +365,8 @@
           (.writeByte out 1) ;; jsonb protocol version
           (.write out ba))))))
 
-(defn copy-to-stream [^ByteArrayOutputStream stream tuples]
-  (with-open [out ^DataOutputStream (DataOutputStream. (BufferedOutputStream. stream))]
+(defn copy-to-stream [^PGCopyOutputStream stream tuples]
+  (with-open [out ^DataOutputStream (DataOutputStream. (BufferedOutputStream. stream 65536))]
     ;; constant header
     (.writeBytes out "PGCOPY\n\377\r\n\0")
     ;; header flags (no OIDs)
@@ -385,17 +386,17 @@
     (copy-to-stream bout values)
     (.toByteArray bout)))
 
-(defn ^CopyManager copy-manager [^java.sql.Connection conn]
-  (let [conn (if (.isWrapperFor conn BaseConnection)
-               (.unwrap conn BaseConnection)
-               conn)]
-    (CopyManager. conn)))
+(defn- ^PgConnection unwrap-connection [^java.sql.Connection conn]
+  (if (.isWrapperFor conn BaseConnection)
+    (.unwrap conn BaseConnection)
+    conn))
 
 (defn copy-table
   ([conn table]
    (copy-table conn table {:csv? true :headers? false}))
   ([^java.sql.Connection conn table {:keys [csv? headers?]}]
-   (let [manager (copy-manager conn)
+   (let [conn (unwrap-connection conn)
+         manager ^CopyManager (.getCopyAPI conn)
          copy-query (str "COPY " table " TO STDOUT"
                          (when csv? " WITH CSV")
                          (when headers? " HEADER"))]
@@ -410,11 +411,14 @@
   ([^java.sql.Connection conn
     table-sql
     values]
-   (let [manager (copy-manager conn)
-         vals (values->copy-rows-binary values)]
-     (with-open [stream (ByteArrayInputStream. vals)]
-       (.copyIn manager (str "COPY " (name table-sql)
-                             " FROM STDIN WITH BINARY") stream))))
+   (let [conn (unwrap-connection conn)
+         manager ^CopyManager (.getCopyAPI conn)
+         cmd ^String (str "COPY " (name table-sql) " FROM STDIN WITH BINARY")
+         op (.copyIn manager cmd)]
+     ;; using BufferedOutputStream's buffer, so keep this one small
+     (with-open [out (PGCopyOutputStream. op 1)]
+       (copy-to-stream out values))
+     (.getHandledRowCount op)))
   ([^java.sql.Connection conn table cols values]
    (let [table-spec (str (name table)
                          "("
