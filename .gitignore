@@ -13,3 +13,4 @@ pom.xml.asc
 .cpcache/
 pom.xml
 /bin/deploy
+trace.edn
