@@ -86,7 +86,7 @@
               :c_varchar "Varchar"
               :c_char "ab"
               :c_citext "CIText"
-              :c_text_array ["examples" "of" "text"]
+              :c_text_array ["examples" "of" "text" nil]
               :c_int_array [1 2 3 4 5]
               :c_uuid_array [#uuid "cc7caf20-14e1-42de-a1e7-455d4f267111"
                              #uuid "cc7caf20-14e1-42de-a1e7-455d4f267112"

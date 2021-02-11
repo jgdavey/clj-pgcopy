@@ -315,7 +315,7 @@
       (.writeLong out (.getLong bb 8))))
 
   nil
-  (oid [_] :unknown)
+  (pg-type [_] :unknown)
   (write-to [_ ^DataOutputStream out]
     (.writeInt out -1)))
 
