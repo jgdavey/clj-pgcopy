@@ -14,3 +14,5 @@ pom.xml.asc
 pom.xml
 /bin/deploy
 trace.edn
+/.clj-kondo
+/.lsp

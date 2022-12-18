@@ -160,6 +160,22 @@
                       )
                      results)))))))
 
+(deftest numeric-converstion-test
+  (let [data [{:c_numeric 500.0M}
+              {:c_numeric (BigDecimal. "1.2E14")}
+              {:c_numeric (BigDecimal. "3.4E-21")}
+              {:c_numeric (BigDecimal. "98.2E21")}]
+        columns (-> data first keys vec)
+        values (into [] (map (apply juxt columns)) data)
+        rows-xform (map (apply juxt columns))]
+    (jdbc/with-db-connection [conn conn-spec]
+      (is (= (count data)
+             (copy/copy-into! (:connection conn) :copytest.test columns values)))
+      (let [results (->> (jdbc/query conn ["select * from copytest.test"])
+                         (map #(select-keys % columns)))]
+        (is (= (into [] rows-xform data)
+               (into [] rows-xform results)))))))
+
 (deftest datetime-inputs-test
   (let [instant (Instant/parse "2018-01-02T03:04:05.678Z")
         data [{;; ZonedDateTime -> timestamp

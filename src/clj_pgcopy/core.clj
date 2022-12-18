@@ -82,29 +82,58 @@
   (let [unscaled ^BigInteger (.unscaledValue bd)
         sign (.signum bd)
         unscaled (if (= -1 sign) (.negate unscaled) unscaled)
-        fraction-digits ^int (.scale bd)
-        fraction-groups (unchecked-divide-int (unchecked-add-int fraction-digits (int 3))
-                                              4)
-        scale-remainder (mod fraction-digits 4)
-        [unscaled digits] (if (zero? scale-remainder)
-                            [unscaled (list)]
-                            ;; scale the first value
-                            (let [result (.divideAndRemainder unscaled (.pow (BigInteger. "10") scale-remainder))
-                                  digit (unchecked-multiply-int ^int (.intValue ^BigInteger (aget result 1))
-                                                                (int (Math/pow 10 (- 4 scale-remainder))))]
-                              [(aget result 0) (list digit)]))
-        digits (loop [^BigInteger unscaled unscaled
-                      digits digits]
-                 (if (.equals unscaled BigInteger/ZERO)
-                   digits
-                   (let [result (.divideAndRemainder unscaled (BigInteger. "10000"))]
-                     (recur
-                      (aget result 0)
-                      (cons (.intValue ^BigInteger (aget result 1)) digits)))))]
-    {:sign sign
-     :fraction-groups fraction-groups
-     :fraction-digits fraction-digits
-     :digits digits}))
+        fraction-digits ^int (.scale bd)]
+    (if (> fraction-digits 0)
+      (let [fraction-groups (unchecked-divide-int (unchecked-add-int fraction-digits (int 3))
+                                                  4)
+            scale-remainder (mod fraction-digits 4)
+            [unscaled digits] (if (zero? scale-remainder)
+                                [unscaled (list)]
+                                ;; scale the first value
+                                (let [result (.divideAndRemainder unscaled (.pow (BigInteger. "10") scale-remainder))
+                                      digit (unchecked-multiply-int ^int (.intValue ^BigInteger (aget result 1))
+                                                                    (int (Math/pow 10 (- 4 scale-remainder))))]
+                                  [(aget result 0) (list digit)]))
+            digits (loop [^BigInteger unscaled unscaled
+                          digits digits]
+                     (if (.equals unscaled BigInteger/ZERO)
+                       digits
+                       (let [result (.divideAndRemainder unscaled (BigInteger. "10000"))]
+                         (recur
+                          (aget result 0)
+                          (cons (.intValue ^BigInteger (aget result 1)) digits)))))]
+        {:sign sign
+         :fraction-groups fraction-groups
+         :fraction-digits fraction-digits
+         :digits digits})
+      (let [original-value (.multiply unscaled (.pow (BigInteger. "10") (abs fraction-digits)))
+            digits (loop [^BigInteger value original-value
+                          digits []]
+                     (if (.equals value BigInteger/ZERO)
+                       digits
+                       (let [result (.divideAndRemainder value (BigInteger. "10000"))]
+                         (recur
+                          (aget result 0)
+                          (cons (.intValue ^BigInteger (aget result 1)) digits)))))]
+        {:sign sign
+         :fraction-groups 0
+         :fraction-digits 0
+         :digits digits}))))
+
+(comment
+  (numeric-components (BigDecimal. "1.2E34"))
+  (numeric-components (BigDecimal. "3.4E-21"))
+  (numeric-components (BigDecimal. "1000"))
+  (numeric-components (BigDecimal. "0.01"))
+  (numeric-components (BigDecimal. "0.00002"))
+  (numeric-components (BigDecimal. "1.00002"))
+  (numeric-components (BigDecimal. "1.0002"))
+
+  (.scale (BigDecimal. "1.00001"))
+  (.scale (BigDecimal. "0.00001"))
+  )
+
+
 
 (extend-protocol IPGBinaryWrite
   (Class/forName "[B")
