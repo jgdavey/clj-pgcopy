@@ -10,8 +10,31 @@
             :extra-deps {org.clojure/tools.namespace {:mvn/version "0.3.1"}
                          org.clojure/java.jdbc {:mvn/version "0.7.10"}}
             :jvm-opts ["-XX:-OmitStackTraceInFastThrow"]}
-           :deploy {:extra-deps {deps-deploy {:mvn/version "RELEASE"}}}
            :bench
            {:extra-paths ["bench"]
-            :extra-deps {criterium {:mvn/version "0.4.5"}
-                         org.clojure/data.csv {:mvn/version "0.1.4"}}}}}
+            :extra-deps {criterium/criterium {:mvn/version "0.4.5"}
+                         org.clojure/data.csv {:mvn/version "0.1.4"}}}
+
+           ;; Packaging and deployment
+           :mvn/artifact-id clj-pgcopy
+           :mvn/group-id    clj-pgcopy
+           :mvn/version     "0.1.2"
+           :jar/file-name   "cljpgcopy.jar"
+
+           :package {:replace-deps
+                     {com.github.seancorfield/depstar {:mvn/version "2.1.303"}}
+                     :exec-fn hf.depstar/jar
+                     :exec-args {:jar         :jar/file-name
+                                 :artifact-id :mvn/artifact-id
+                                 :group-id    :mvn/group-id
+                                 :version     :mvn/version
+                                 :sync-pom true}}
+           :deploy {:extra-deps {slipset/deps-deploy {:mvn/version "RELEASE"}}
+                    :exec-fn deps-deploy.deps-deploy/deploy
+                    :exec-args {:installer :remote
+                                :sign-releases? true
+                                :artifact :jar/file-name}}
+           :install {:extra-deps {slipset/deps-deploy {:mvn/version "RELEASE"}}
+                     :exec-fn deps-deploy.deps-deploy/deploy
+                     :exec-args {:installer :local
+                                 :artifact :jar/file-name}}}}

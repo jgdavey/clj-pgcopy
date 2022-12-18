@@ -16,3 +16,4 @@ pom.xml
 trace.edn
 /.clj-kondo
 /.lsp
+/*.asc
