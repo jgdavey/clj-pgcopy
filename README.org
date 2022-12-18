@@ -13,13 +13,13 @@ postgres binary format. See the [[Input Type mapping][mapping]] section for more
 ** Leiningen/Boot
 
 #+BEGIN_EXAMPLE
-[clj-pgcopy "0.1.0"]
+[clj-pgcopy "0.1.1"]
 #+END_EXAMPLE
 
 ** Clojure CLI/deps.edn
 
 #+BEGIN_EXAMPLE
-clj-pgcopy {:mvn/version "0.1.0"}
+clj-pgcopy {:mvn/version "0.1.1"}
 #+END_EXAMPLE
 
 #+BEGIN_SRC clojure :exports none
