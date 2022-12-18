@@ -106,7 +106,7 @@
          :fraction-groups fraction-groups
          :fraction-digits fraction-digits
          :digits digits})
-      (let [original-value (.multiply unscaled (.pow (BigInteger. "10") (abs fraction-digits)))
+      (let [original-value (.multiply unscaled (.pow (BigInteger. "10") (Math/abs fraction-digits)))
             digits (loop [^BigInteger value original-value
                           digits []]
                      (if (.equals value BigInteger/ZERO)
