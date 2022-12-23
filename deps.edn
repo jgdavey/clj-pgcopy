@@ -1,5 +1,5 @@
 {:paths ["src"]
- :deps {org.postgresql/postgresql {:mvn/version "42.2.8"}}
+ :deps {org.postgresql/postgresql {:mvn/version "42.5.1"}}
  :aliases {:run-tests
            {:extra-paths ["test"]
             :extra-deps {lambdaisland/kaocha {:mvn/version "1.71.1119"}
