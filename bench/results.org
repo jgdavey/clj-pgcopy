@@ -10,6 +10,7 @@ Inventory
 
 
 Binary data with throttling
+
 | tuples | batch size | insert-multi  | clj-pgcopy    |
 |   1000 |         50 | 197.932399 ms | 192.672917 ms |
 |   1000 |        100 | 159.237892 ms | 140.440610 ms |
@@ -19,8 +20,27 @@ Binary data with throttling
 
 
 Textual data
+
 | tuples | batch size | insert-multi  | clj-pgcopy    |
 |  10000 |        100 | 326.799031 ms | 224.202778 ms |
 |  10000 |        500 | 308.176761 ms | 161.291841 ms |
 |  50000 |        100 | 1.615220 sec  | 1.327179 sec  |
 |  50000 |        500 | 2.117410 sec  | 789.849694 ms |
+
+
+** From benchmark/-main
+
+|---------+-------+-------+--------+-------|
+| Table   | Total | Batch | Insert |  Copy |
+|---------+-------+-------+--------+-------|
+| Typical |  5000 |   250 |   75.9 |  36.5 |
+| Typical |  5000 |  1000 |   72.1 |  34.8 |
+| Typical | 10000 |   250 |  145.4 |  62.0 |
+| Typical | 10000 |  1000 |  134.8 |  62.4 |
+| Typical | 20000 |   250 |  290.2 | 115.2 |
+| Typical | 20000 |  1000 |  269.2 | 117.6 |
+| Binary  |  5000 |   250 |  272.7 | 210.3 |
+| Binary  |  5000 |  1000 |  326.7 | 265.9 |
+| Textual | 10000 |   250 |  598.6 | 256.8 |
+| Textual | 10000 |  1000 |  605.1 | 229.1 |
+|---------+-------+-------+--------+-------|

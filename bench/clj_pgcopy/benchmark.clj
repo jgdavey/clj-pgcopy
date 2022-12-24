@@ -6,7 +6,8 @@
             [clojure.java.io :as io]
             [clojure.java.jdbc :as jdbc]
             [clojure.test :refer [join-fixtures]]
-            [clojure.string :as str])
+            [clojure.string :as str]
+            [crockery.core :as crock])
   (:import (java.time LocalDateTime
                       LocalDate
                       Instant
@@ -197,21 +198,25 @@
         (copy/copy-into! (:connection conn) table cols (map ->tuple batch))))))
 
 
-(defn bench [batched-data table cols]
-  (println "jdbc/insert-multi!")
-  (with-bench-tables
-    (with-utc
-      (crit/quick-bench
-       (bench-insert-multi table
-                           cols
-                           batched-data))))
-  (println "clj-pgcopy")
-  (with-bench-tables
-    (with-utc
-      (crit/quick-bench
-       (bench-pgcopy table
-                     cols
-                     batched-data)))))
+(defn bench [batched-data opts]
+  (let [{:keys [table cols]} opts
+        insert
+        (do (println "jdbc/insert-multi!")
+            (with-bench-tables
+              (with-utc
+                (crit/quick-benchmark
+                 (bench-insert-multi table cols batched-data)
+                 {}))))
+        copy
+        (do (println "clj-pgcopy")
+            (with-bench-tables
+              (with-utc
+                (crit/quick-benchmark
+                 (bench-pgcopy table cols batched-data)
+                 {}))))]
+    (assoc opts
+           :insert-result (dissoc insert :runtime-details :os-details :options :results)
+           :copy-result (dissoc copy :runtime-details :os-details :options :results))))
 
 (defn bench-inventory [{:keys [total-rows batch-size]
                         :or {total-rows 1000
@@ -220,7 +225,10 @@
   (let [data (generate-inventory total-rows)
         table :benchmark.typical
         cols [:guid :created_at :active :price :average_rating]]
-    (bench (partition-all batch-size data) table cols)))
+    (bench (partition-all batch-size data) {:table table
+                                            :total-rows total-rows
+                                            :batch-size batch-size
+                                            :cols cols})))
 
 
 (defn bench-binary-data [{:keys [total-rows batch-size]
@@ -231,7 +239,10 @@
   (let [data (generate-bindata total-rows)
         table :benchmark.bindata
         cols [:guid :payload]]
-    (bench (partition-all batch-size data) table cols)))
+    (bench (partition-all batch-size data) {:table table
+                                            :total-rows total-rows
+                                            :batch-size batch-size
+                                            :cols cols})))
 
 (defn bench-textual-data [{:keys [total-rows batch-size]
                            :or {total-rows 1000
@@ -240,27 +251,63 @@
   (let [data (generate-textual total-rows)
         table :benchmark.textual
         cols [:guid :title :body]]
-    (bench (partition-all batch-size data) table cols)))
+    (bench (partition-all batch-size data) {:table table
+                                            :total-rows total-rows
+                                            :batch-size batch-size
+                                            :cols cols})))
 
 (defn bench-fight-songs []
   (let [data (load-fight-songs)]
     (println (format "Fight song data, %s" (count data)))
     (let [table :benchmark.fight_songs
           cols [:school :conference :song_name :writers :year :student_writer :official_song :bpm :sec_duration :trope_count :fight :num_fights :spotify_id :victory :win_won :victory_win_won :rah :nonsense :colors :men :opponents]]
-      (bench [data] table cols))))
+      (bench [data] {:table table
+                     :batch-size 1
+                     :cols cols}))))
 
-(defn -main [& args]
-  (doseq [total-rows [5000]
-          batch-size [500]
-          :let [opts {:total-rows total-rows :batch-size batch-size}]]
-    (println "*******")
-    
-    #_(bench-inventory opts)
-    #_(bench-binary-data opts)
-    #_(bench-textual-data opts)))
+(defn bench-all []
+  (let [all (doall
+             (for [[bench-fn total-rows] [[bench-inventory 5000]
+                                          [bench-inventory 10000]
+                                          [bench-inventory 20000]
+                                          [bench-binary-data 5000]
+                                          [bench-textual-data 10000]]
+                   batch-size [250 1000]
+                   :let [opts {:total-rows total-rows :batch-size batch-size}]]
+               (bench-fn opts)))]
+    (def all all)
+    all))
+
+(defn print-table [results]
+  (crock/print-table [{:key-fn (fn [{:keys [table]}]
+                                 (case table
+                                   :benchmark.bindata "Binary"
+                                   :benchmark.textual "Textual"
+                                   :benchmark.typical "Typical"
+                                   :benchmark.fight_songs "Fight Songs"
+                                   (str table)))
+                       :title "Table"}
+                      {:key-fn :total-rows
+                       :align :right
+                       :title "Total"}
+                      {:key-fn :batch-size
+                       :align :right
+                       :title "Batch"}
+                      {:key-fn
+                       #(format "%.1f" (* 1000 (get-in % [:insert-result :sample-mean 0])))
+                       :align :right
+                       :title "Insert"}
+                      {:key-fn
+                       #(format "%.1f" (* 1000 (get-in % [:copy-result :sample-mean 0])))
+                       :align :right
+                       :title "Copy"}]
+                     results))
+
+(defn -main [& _]
+  (let [all (bench-all)]
+    (print-table all)))
 
 
 (comment
-
-  (bench-fight-songs)
-  )
+  (-main)
+  (bench-fight-songs))
