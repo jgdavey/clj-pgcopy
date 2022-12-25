@@ -6,6 +6,8 @@
                     BufferedReader
                     BufferedOutputStream
                     DataOutputStream)
+           (java.net Inet4Address
+                     Inet6Address)
            (java.nio ByteBuffer)
            (java.time LocalDateTime
                       LocalDate
@@ -342,6 +344,28 @@
       (.writeShort out (.getShort bb 4))
       (.writeShort out (.getShort bb 6))
       (.writeLong out (.getLong bb 8))))
+
+  Inet4Address
+  (pg-type [_] :inet)
+  (write-to [value ^DataOutputStream out]
+    (.writeInt out 8)
+    (.writeByte out 2)
+    (.writeByte out 32)
+    (.writeByte out 0)
+    (let [addr ^bytes (.getAddress value)]
+      (.writeByte out (count addr))
+      (.write out addr)))
+
+  Inet6Address
+  (pg-type [_] :inet)
+  (write-to [value ^DataOutputStream out]
+    (.writeInt out 20)
+    (.writeByte out 3)
+    (.writeByte out 128)
+    (.writeByte out 0)
+    (let [addr ^bytes (.getAddress value)]
+      (.writeByte out (count addr))
+      (.write out addr)))
 
   nil
   (pg-type [_] :unknown)

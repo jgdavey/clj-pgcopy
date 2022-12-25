@@ -8,7 +8,8 @@
                       Instant
                       ZoneId
                       ZoneOffset)
-           (org.postgresql.util PGInterval)
+           (java.net InetAddress)
+           (org.postgresql.util PGInterval PGobject)
            (org.postgresql.geometric PGbox
                                      PGcircle
                                      PGline
@@ -74,6 +75,9 @@
                                "c_box box,"
                                "c_circle circle,"
                                "c_polygon polygon,"
+                               "c_inet4 inet,"
+                               "c_inet6 inet,"
+                               "c_daterange daterange,"
                                "c_bytea bytea)"))
       (f)
       (jdbc/execute! conn  "drop schema if exists copytest cascade"))))
@@ -111,6 +115,8 @@
               :c_polygon (PGpolygon. "((1.2,-3.4),(-5.6,7.8),(9.0, 0.1))")
               :c_box (PGbox. "(-5.6,7.8),(1.2,-3.4)")
               :c_circle (PGcircle. "<(1.2,-3.4), 9.1>")
+              :c_inet4 (InetAddress/getByName "127.0.0.1")
+              :c_inet6 (InetAddress/getByName "1080::8:800:200C:417A")
               :c_bytea "the byte array"}
         columns (-> row1 keys vec)
         data (vector row1 (into {} (map vector columns (repeat nil))))
@@ -129,7 +135,7 @@
       (is (= (count data)
              (copy/copy-into! (:connection conn) :copytest.test columns values)))
       (let [results (->> (jdbc/query conn ["select * from copytest.test"])
-                         (map #(select-keys % columns )))]
+                         (map #(select-keys % columns)))]
         (is (= (into []
                      (comp
                       (map
@@ -155,7 +161,9 @@
                                  (update :c_citext string-value)
                                  (update :c_json string-value)
                                  (update :c_jsonb string-value)
-                                 (update :c_xml string-value))))
+                                 (update :c_xml string-value)
+                                 (update :c_inet4 #(when % (InetAddress/getByName (str %))))
+                                 (update :c_inet6 #(when % (InetAddress/getByName (str %)))))))
                       ;;(map (apply juxt columns))
                       )
                      results)))))))

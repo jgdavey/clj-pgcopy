@@ -151,6 +151,13 @@ differ from the above.
 | java.time.OffsetDatetime     | timestamp[tz] |
 | org.postgres.util.PGInterval | interval      |
 
+** Other JVM native types
+
+| JVM type              | Postgres type                 |
+|-----------------------+-------------------------------|
+| java.net.Inet4Address | inet                          |
+| java.net.Inet6Address | inet                          |
+
 ** Geometric mappings
 
 | JVM type                         | Postgres type |
@@ -179,7 +186,7 @@ Impemented for the following JVM-typed arrays for:
 | float[]          | float4[] (aka real[])             |
 | double[]         | float8[] (aka double precision[]) |
 | byte[]           | bytea                             |
-| String[]         | text[] (or varchar)               |
+| String[]         | text[] (or varchar[])             |
 | java.util.UUID[] | uuid[]                            |
 
 
@@ -188,7 +195,7 @@ Currently, only 1-dimensional Postgres arrays are supported.
 ** Not Yet Implemented
 
 - hstore (wrapper?)
-- inet, cidr, macaddr, macaddr8
+- cidr, macaddr, macaddr8
 - bit strings
 - composite types
 - range types
