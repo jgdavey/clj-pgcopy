@@ -7,7 +7,7 @@
                       Instant)
            (java.util.concurrent TimeUnit)))
 
-(defn ^Long date-time->epoch-milli [^LocalDateTime dt]
+(defn date-time->epoch-milli ^Long [^LocalDateTime dt]
   (.. dt
       (atOffset ZoneOffset/UTC)
       toInstant

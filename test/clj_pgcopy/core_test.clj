@@ -1,7 +1,7 @@
 (ns clj-pgcopy.core-test
   (:require [clj-pgcopy.core :as copy]
             [clj-pgcopy.time :as ptime]
-            [clojure.test :refer :all]
+            [clojure.test :refer [deftest use-fixtures is]]
             [clojure.java.jdbc :as jdbc])
   (:import (java.time LocalDateTime
                       LocalDate
