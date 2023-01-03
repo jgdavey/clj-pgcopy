@@ -192,11 +192,16 @@ Impemented for the following JVM-typed arrays for:
 
 Currently, only 1-dimensional Postgres arrays are supported.
 
-** Not Yet Implemented
+** Planned But Not Yet Implemented
 
-- hstore (wrapper?)
+- more array types (date, timestamp, etc)
+- range types
+
+** Unplanned
+
+- hstore
 - cidr, macaddr, macaddr8
 - bit strings
-- composite types
-- range types
-- more array types? (date, timestamp, etc)
+- composite types / records
+- multi-dimensional arrays
+
