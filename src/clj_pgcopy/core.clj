@@ -4,11 +4,14 @@
             clj-pgcopy.impl)
   (:import (java.io ByteArrayOutputStream
                     BufferedOutputStream
-                    DataOutputStream)
+                    DataOutputStream
+                    OutputStream)
            (org.postgresql.copy CopyManager
                                 PGCopyOutputStream)
            (org.postgresql.jdbc PgConnection)
            (org.postgresql.core BaseConnection)))
+
+(set! *warn-on-reflection* true)
 
 (deftype JsonB [^String value]
   Object
@@ -23,7 +26,7 @@
           (.writeByte out 1) ;; jsonb protocol version
           (.write out ba))))))
 
-(defn copy-to-stream [^PGCopyOutputStream stream tuples]
+(defn copy-to-stream [^OutputStream stream tuples]
   (with-open [out ^DataOutputStream (DataOutputStream. (BufferedOutputStream. stream 65536))]
     ;; constant header
     (.writeBytes out "PGCOPY\n\377\r\n\0")
