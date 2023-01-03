@@ -1,26 +1,13 @@
 (ns clj-pgcopy.benchmark
   (:require [criterium.core :as crit]
             [clj-pgcopy.core :as copy]
-            [clj-pgcopy.time :as ptime]
             [clojure.data.csv :as csv]
             [clojure.java.io :as io]
             [clojure.java.jdbc :as jdbc]
-            [clojure.test :refer [join-fixtures]]
+            ;; [clojure.test :refer [join-fixtures]]
             [clojure.string :as str]
             [crockery.core :as crock])
-  (:import (java.time LocalDateTime
-                      LocalDate
-                      Instant
-                      ZoneId
-                      ZoneOffset)
-           (org.postgresql.util PGInterval)
-           (org.postgresql.geometric PGbox
-                                     PGcircle
-                                     PGline
-                                     PGpath
-                                     PGpolygon
-                                     PGpoint)
-           (java.util TimeZone Random)))
+  (:import (java.util TimeZone Random)))
 
 (defn csv-data->maps [csv-data]
   (map zipmap

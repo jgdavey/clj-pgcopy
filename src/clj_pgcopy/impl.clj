@@ -1,26 +1,29 @@
 (ns clj-pgcopy.impl
-  (:require [clj-pgcopy.protocols :as proto]
-            [clj-pgcopy.time :as ptime])
-  (:import (java.io ByteArrayOutputStream
-                    DataOutputStream)
-           (java.net Inet4Address
-                     Inet6Address)
-           (java.nio ByteBuffer)
-           (java.time LocalDate
-                      ZonedDateTime
-                      OffsetDateTime
-                      Instant)
-           (java.util UUID)
-           (org.postgresql.geometric PGbox
-                                     PGcircle
-                                     PGline
-                                     PGpath
-                                     PGpolygon
-                                     PGpoint)
-           (org.postgresql.util PGInterval)))
+  (:require
+   [clj-pgcopy.protocols :as proto])
+  (:import
+   (java.io ByteArrayOutputStream DataOutputStream)
+   (java.net Inet4Address Inet6Address)
+   (java.nio ByteBuffer)
+   (java.time
+    Instant
+    LocalDate
+    LocalDateTime
+    OffsetDateTime
+    ZoneOffset
+    ZonedDateTime)
+   (java.util UUID)
+   (java.util.concurrent TimeUnit)
+   (org.postgresql.geometric
+    PGbox
+    PGcircle
+    PGline
+    PGpath
+    PGpoint
+    PGpolygon)
+   (org.postgresql.util PGInterval)))
 
 (set! *warn-on-reflection* true)
-
 
 (def oids
   {:bytea 17
@@ -107,7 +110,6 @@
   )
 
 
-
 (extend-protocol proto/IPGBinaryWrite
   ;; bytea
   (Class/forName "[B")
@@ -184,53 +186,6 @@
       (.writeLong out (long (* 1000000 seconds)))
       (.writeInt out days)
       (.writeInt out (+ months (* 12 years)))))
-
-  ;; timestamp
-  java.util.Date
-  (write-to [date ^DataOutputStream out]
-    (proto/write-to (ptime/java-epoch->postgres-epoch (.getTime date)) out))
-
-  ;; timestamp
-  Instant
-  (write-to [instant ^DataOutputStream out]
-    (proto/write-to (ptime/java-epoch->postgres-epoch (.toEpochMilli instant)) out))
-
-  ;; date
-  LocalDate
-  (write-to [date ^DataOutputStream out]
-    (let [days (-> date
-                   .atStartOfDay
-                   ptime/date-time->epoch-milli
-                   ptime/java-epoch->postgres-days
-                   int)]
-      (.writeInt out 4)
-      (.writeInt out days)))
-
-  ;; date
-  java.sql.Date
-  (write-to [date ^DataOutputStream out]
-    (proto/write-to ^LocalDate (.toLocalDate date) out))
-
-  ;; timestamp
-  java.sql.Timestamp
-  (write-to [ts ^DataOutputStream out]
-    (proto/write-to ^Instant (.toInstant ts) out))
-
-  ;; Do not assume UTC, needs a time zone or offset
-  ;; LocalDateTime
-  ;; (pg-type [_] :timestamp)
-  ;; (write-to [ldt ^DataOutputStream out]
-  ;;   (write-to ^Instant (.toInstant ldt) out))
-
-  ;; timestamp
-  ZonedDateTime
-  (write-to [zdt ^DataOutputStream out]
-    (proto/write-to ^Instant (.toInstant zdt) out))
-
-  ;; timestamp
-  OffsetDateTime
-  (write-to [odt ^DataOutputStream out]
-    (proto/write-to ^Instant (.toInstant odt) out))
 
   ;; point
   PGpoint
@@ -378,4 +333,106 @@
 ;; String array
 (extend-primitive-array (Class/forName "[Ljava.lang.String;") :text)
 
+;; UUID array
 (extend-primitive-array (Class/forName "[Ljava.util.UUID;") :uuid)
+
+
+;; Dates and Timestamps
+
+(defn date-time->epoch-milli ^Long [^LocalDateTime dt]
+  (.. dt
+      (atOffset ZoneOffset/UTC)
+      toInstant
+      toEpochMilli))
+
+(def epoch-distance
+  (-
+   (date-time->epoch-milli
+    ;; postgres epoch
+    (LocalDateTime/of 2000 1 1 0 0 0))
+   (.toEpochMilli Instant/EPOCH)))
+
+;; 946684800000
+
+;; The conversion is valid for any year 1583 CE onwards.
+(defn java-epoch->postgres-epoch ^long [millis]
+  ;; returns microseconds
+  (long (* 1000 (- millis epoch-distance))))
+
+(defn java-epoch->postgres-days [millis]
+  (->> (- millis epoch-distance)
+       (.toDays TimeUnit/MILLISECONDS)
+       int))
+
+(defprotocol ToInstant
+  (-to-instant ^Instant [self]))
+
+(extend-protocol ToInstant
+  LocalDateTime
+  (-to-instant [self]
+    (.. self
+        (atOffset ZoneOffset/UTC)
+        toInstant))
+  LocalDate
+  (-to-instant [self]
+    (.. self
+        atStartOfDay
+        (atOffset ZoneOffset/UTC)
+        toInstant))
+  Instant
+  (-to-instant [self]
+    self)
+  java.util.Date
+  (-to-instant [self]
+    (.toInstant self))
+  java.sql.Date
+  (-to-instant [self]
+    (-to-instant
+     (.toLocalDate self)))
+  java.sql.Timestamp
+  (-to-instant [self]
+    (.toInstant self))
+  ZonedDateTime
+  (-to-instant [self]
+    (.toInstant self))
+  OffsetDateTime
+  (-to-instant [self]
+    (.toInstant self))
+  nil
+  (-to-instant [_]
+    nil))
+
+(defn write-timestamp [obj ^DataOutputStream out]
+  (.writeInt out 8)
+  (.writeLong out (java-epoch->postgres-epoch (.toEpochMilli (-to-instant obj)))))
+
+(extend java.util.Date
+  proto/IPGBinaryWrite {:write-to write-timestamp})
+
+(extend Instant
+  proto/IPGBinaryWrite {:write-to write-timestamp})
+
+(extend java.sql.Timestamp
+  proto/IPGBinaryWrite {:write-to write-timestamp})
+
+(extend ZonedDateTime
+  proto/IPGBinaryWrite {:write-to write-timestamp})
+
+(extend OffsetDateTime
+  proto/IPGBinaryWrite {:write-to write-timestamp})
+
+(extend-type LocalDate
+  proto/IPGBinaryWrite
+  (write-to [date ^DataOutputStream out]
+    (let [days (-> date
+                   -to-instant
+                   (.toEpochMilli)
+                   java-epoch->postgres-days
+                   int)]
+      (.writeInt out 4)
+      (.writeInt out days))))
+
+(extend-type java.sql.Date
+  proto/IPGBinaryWrite
+  (write-to [date ^DataOutputStream out]
+    (proto/write-to ^LocalDate (.toLocalDate date) out)))

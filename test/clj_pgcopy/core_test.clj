@@ -1,6 +1,6 @@
 (ns clj-pgcopy.core-test
   (:require [clj-pgcopy.core :as copy]
-            [clj-pgcopy.time :as ptime]
+            clj-pgcopy.impl
             [clojure.test :refer [deftest use-fixtures is]]
             [clojure.java.jdbc :as jdbc])
   (:import (java.time LocalDateTime
@@ -19,6 +19,9 @@
            (java.util TimeZone)))
 
 (def conn-spec "jdbc:postgresql://localhost:5432/test_pgcopy")
+
+(defn to-instant [obj]
+  (clj-pgcopy.impl/-to-instant obj))
 
 (defprotocol IStringValue
   (string-value [_]))
@@ -141,7 +144,7 @@
                       (map
                        (fn [row]
                          (-> row
-                             (update :c_date ptime/to-instant)
+                             (update :c_date to-instant)
                              (update :c_jsonb string-value))))
                       ;;(map (apply juxt columns))
                       )
@@ -150,9 +153,9 @@
                      (comp
                       (map (fn [row]
                              (-> row
-                                 (update :c_date ptime/to-instant)
-                                 (update :c_ts ptime/to-instant)
-                                 (update :c_tstz ptime/to-instant)
+                                 (update :c_date to-instant)
+                                 (update :c_ts to-instant)
+                                 (update :c_tstz to-instant)
                                  (update :c_bytea bytes->string)
                                  (update :c_text_array #(when % (not-empty (vec (.getArray %)))))
                                  (update :c_int_array #(when % (not-empty (vec (.getArray %)))))
@@ -218,8 +221,8 @@
         values (into [] (map (apply juxt columns)) data)
         fixup-row (fn [row]
                     (-> row
-                        (update :c_tstz ptime/to-instant)
-                        (update :c_ts ptime/to-instant)))
+                        (update :c_tstz to-instant)
+                        (update :c_ts to-instant)))
         rows-xform (comp
                     (map fixup-row)
                     (map (apply juxt columns)))]
@@ -247,7 +250,7 @@
         values (into [] (map (apply juxt columns)) data)
         fixup-row (fn [row]
                     (-> row
-                        (update :c_date ptime/to-instant)))
+                        (update :c_date to-instant)))
         rows-xform (comp
                     (map fixup-row)
                     (map (apply juxt columns)))]
