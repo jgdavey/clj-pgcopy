@@ -75,27 +75,22 @@
   "table-sql is the table name and columns for the COPY statement,
   e.g. myschema.mytable(col1, col2). It should match the order of the
   tuples exactly."
-  [^java.sql.Connection conn
-   table-sql
-   values
-   opts]
-  (let [conn (unwrap-connection conn)
-        manager ^CopyManager (.getCopyAPI conn)
-        cmd ^String (str "COPY " (name table-sql) " FROM STDIN WITH BINARY")
-        op (.copyIn manager cmd)]
-     ;; using BufferedOutputStream's buffer, so keep this one small
-    (with-open [out (PGCopyOutputStream. op 1)]
-      (copy-to-stream out values opts))
-    (.getHandledRowCount op)))
-
-(defn copy-into!
-  "table-sql is the table name and columns for the COPY statement,
-  e.g. myschema.mytable(col1, col2). It should match the order of the
-  tuples exactly."
+  ([conn table-sql values]
+   (copy-values-into! conn table-sql values nil))
   ([^java.sql.Connection conn
     table-sql
-    values]
-   (copy-values-into! conn table-sql values {}))
-  ([^java.sql.Connection conn table cols values]
-   (let [table-spec (to-table-spec table cols)]
-     (copy-values-into! conn table-spec values {}))))
+    values
+    opts]
+   (let [conn (unwrap-connection conn)
+         manager ^CopyManager (.getCopyAPI conn)
+         cmd ^String (str "COPY " (name table-sql) " FROM STDIN WITH BINARY")
+         op (.copyIn manager cmd)]
+     ;; using BufferedOutputStream's buffer, so keep this one small
+     (with-open [out (PGCopyOutputStream. op 1)]
+       (copy-to-stream out values opts))
+     (.getHandledRowCount op))))
+
+(defn copy-into!
+  [^java.sql.Connection conn table cols values]
+  (let [table-spec (to-table-spec table cols)]
+    (copy-values-into! conn table-spec values nil)))
