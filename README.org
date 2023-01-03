@@ -1,5 +1,7 @@
 #+TITLE: clj-pgcopy
 
+#+html: <a href="https://clojars.org/clj-pgcopy"><img src="https://img.shields.io/clojars/v/clj-pgcopy.svg" alt="Clojars" /></a>
+
 Import data into postgres quickly, implemented using postgresql's
 =COPY= in binary format.
 
