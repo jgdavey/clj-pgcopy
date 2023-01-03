@@ -136,7 +136,7 @@
         bytes->string #(when (and % (pos? (count %))) (String. %))]
     (jdbc/with-db-connection [conn conn-spec]
       (is (= (count data)
-             (copy/copy-into! (:connection conn) :copytest.test columns values)))
+             (copy/copy-into-table! (:connection conn) :copytest.test columns values)))
       (let [results (->> (jdbc/query conn ["select * from copytest.test"])
                          (map #(select-keys % columns)))]
         (is (= (into []
@@ -181,7 +181,7 @@
         rows-xform (map (apply juxt columns))]
     (jdbc/with-db-connection [conn conn-spec]
       (is (= (count data)
-             (copy/copy-into! (:connection conn) :copytest.test columns values)))
+             (copy/copy-into-table! (:connection conn) :copytest.test columns values)))
       (let [results (->> (jdbc/query conn ["select * from copytest.test"])
                          (map #(select-keys % columns)))]
         (is (= (into [] rows-xform data)
@@ -228,7 +228,7 @@
                     (map (apply juxt columns)))]
     (jdbc/with-db-connection [conn conn-spec]
       (is (= (count data)
-             (copy/copy-into! (:connection conn) :copytest.test columns values)))
+             (copy/copy-into-table! (:connection conn) :copytest.test columns values)))
       (let [results (->> (jdbc/query conn ["select * from copytest.test"])
                          (map #(select-keys % columns)))]
         (is (= (into [] rows-xform data)
@@ -256,7 +256,7 @@
                     (map (apply juxt columns)))]
     (jdbc/with-db-connection [conn conn-spec]
       (is (= (count data)
-             (copy/copy-into! (:connection conn) :copytest.test columns values)))
+             (copy/copy-into-table! (:connection conn) :copytest.test columns values)))
       (let [results (->> (jdbc/query conn ["select * from copytest.test"])
                          (map #(select-keys % columns)))]
         (is (= (into [] rows-xform data)

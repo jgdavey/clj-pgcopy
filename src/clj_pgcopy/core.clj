@@ -90,7 +90,16 @@
        (copy-to-stream out values opts))
      (.getHandledRowCount op))))
 
-(defn copy-into!
-  [^java.sql.Connection conn table cols values]
-  (let [table-spec (to-table-spec table cols)]
-    (copy-values-into! conn table-spec values nil)))
+(defn ^{:deprecated "0.2.0"} copy-into!
+  ([^java.sql.Connection conn table-spec values]
+   (copy-values-into! conn table-spec values nil))
+  ([^java.sql.Connection conn table cols values]
+   (let [table-spec (to-table-spec table cols)]
+     (copy-values-into! conn table-spec values nil))))
+
+(defn copy-into-table!
+  ([conn table cols values]
+   (copy-into-table! conn table cols values nil))
+  ([^java.sql.Connection conn table cols values opts]
+   (let [table-spec (to-table-spec table cols)]
+     (copy-values-into! conn table-spec values opts))))

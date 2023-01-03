@@ -182,8 +182,7 @@
     (jdbc/with-db-connection [conn conn-spec]
       (jdbc/execute! conn (str "truncate " (name table)))
       (doseq [batch batches]
-        (copy/copy-into! (:connection conn) table cols (map ->tuple batch))))))
-
+        (copy/copy-into-table! (:connection conn) table cols (map ->tuple batch))))))
 
 (defn bench [batched-data opts]
   (let [{:keys [table cols]} opts
