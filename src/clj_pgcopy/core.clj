@@ -26,8 +26,8 @@
           (.writeByte out 1) ;; jsonb protocol version
           (.write out ba))))))
 
-(defn copy-to-stream [^OutputStream stream tuples]
-  (with-open [out ^DataOutputStream (DataOutputStream. (BufferedOutputStream. stream 65536))]
+(defn copy-to-stream [^OutputStream stream tuples opts]
+  (with-open [out ^DataOutputStream (DataOutputStream. (BufferedOutputStream. stream (get opts :buffer-size 65536)))]
     ;; constant header
     (.writeBytes out "PGCOPY\n\377\r\n\0")
     ;; header flags (no OIDs)
@@ -44,7 +44,7 @@
 
 (defn values->copy-rows-binary ^bytes [values]
   (with-open [bout ^ByteArrayOutputStream (ByteArrayOutputStream. 4096)]
-    (copy-to-stream bout values)
+    (copy-to-stream bout values {})
     (.toByteArray bout)))
 
 (defn- unwrap-connection ^PgConnection [^java.sql.Connection conn]
@@ -65,6 +65,29 @@
        (.copyOut manager copy-query out)
        (String. (.toByteArray out))))))
 
+(defn to-table-spec [table cols]
+  (str (name table)
+       "("
+       (str/join "," (map name cols))
+       ")"))
+
+(defn copy-values-into!
+  "table-sql is the table name and columns for the COPY statement,
+  e.g. myschema.mytable(col1, col2). It should match the order of the
+  tuples exactly."
+  [^java.sql.Connection conn
+   table-sql
+   values
+   opts]
+  (let [conn (unwrap-connection conn)
+        manager ^CopyManager (.getCopyAPI conn)
+        cmd ^String (str "COPY " (name table-sql) " FROM STDIN WITH BINARY")
+        op (.copyIn manager cmd)]
+     ;; using BufferedOutputStream's buffer, so keep this one small
+    (with-open [out (PGCopyOutputStream. op 1)]
+      (copy-to-stream out values opts))
+    (.getHandledRowCount op)))
+
 (defn copy-into!
   "table-sql is the table name and columns for the COPY statement,
   e.g. myschema.mytable(col1, col2). It should match the order of the
@@ -72,17 +95,7 @@
   ([^java.sql.Connection conn
     table-sql
     values]
-   (let [conn (unwrap-connection conn)
-         manager ^CopyManager (.getCopyAPI conn)
-         cmd ^String (str "COPY " (name table-sql) " FROM STDIN WITH BINARY")
-         op (.copyIn manager cmd)]
-     ;; using BufferedOutputStream's buffer, so keep this one small
-     (with-open [out (PGCopyOutputStream. op 1)]
-       (copy-to-stream out values))
-     (.getHandledRowCount op)))
+   (copy-values-into! conn table-sql values {}))
   ([^java.sql.Connection conn table cols values]
-   (let [table-spec (str (name table)
-                         "("
-                         (str/join "," (map name cols))
-                         ")")]
-     (copy-into! conn table-spec values))))
+   (let [table-spec (to-table-spec table cols)]
+     (copy-values-into! conn table-spec values {}))))

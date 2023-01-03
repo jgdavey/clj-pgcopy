@@ -265,6 +265,26 @@
     (def all all)
     all))
 
+(defn bench-buffer-size
+  []
+  (let [total-rows 25000
+        data (generate-inventory total-rows)
+        table :benchmark.typical
+        cols [:guid :created_at :active :price :average_rating]
+        table-spec (copy/to-table-spec table cols)
+        ->tuple (apply juxt cols)]
+    (doseq [opts [{:buffer-size 1024}
+                  {:buffer-size 16384}
+                  {:buffer-size 32768}
+                  {:buffer-size 65536}]]
+      (println "With opts:" opts)
+      (with-bench-tables
+        (with-utc
+          (crit/quick-bench
+           (jdbc/with-db-connection [conn conn-spec]
+             (jdbc/execute! conn (str "truncate " (name table)))
+             (copy/copy-values-into! (:connection conn) table-spec (map ->tuple data) opts))))))))
+
 (defn print-table [results]
   (crock/print-table [{:key-fn (fn [{:keys [table]}]
                                  (case table
@@ -297,4 +317,7 @@
 
 (comment
   (-main)
-  (bench-fight-songs))
+  (bench-fight-songs)
+
+  (bench-buffer-size)
+  )
