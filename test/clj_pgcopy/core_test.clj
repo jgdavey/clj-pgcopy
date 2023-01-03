@@ -171,7 +171,7 @@
                       )
                      results)))))))
 
-(deftest numeric-converstion-test
+(deftest numeric-conversion-test
   (let [data [{:c_numeric 500.0M}
               {:c_numeric (BigDecimal. "1.2E14")}
               {:c_numeric (BigDecimal. "3.4E-21")}
