@@ -12,17 +12,8 @@ postgres binary format. See the [[Input Type mapping][mapping]] section for more
 
 * Usage
 
-** Leiningen/Boot
-
-#+BEGIN_EXAMPLE
-[clj-pgcopy "0.1.1"]
-#+END_EXAMPLE
-
-** Clojure CLI/deps.edn
-
-#+BEGIN_EXAMPLE
-clj-pgcopy {:mvn/version "0.1.1"}
-#+END_EXAMPLE
+Add the library to your project. See [[https://clojars.org/clj-pgcopy][description on Clojars]] for more
+information.
 
 #+BEGIN_SRC clojure :exports none
 (require '[clojure.java.jdbc :as jdbc])
