@@ -15,27 +15,6 @@
             :extra-deps {criterium/criterium {:mvn/version "0.4.6"}
                          org.clojure/data.csv {:mvn/version "1.1.0"}
                          com.joshuadavey/crockery {:mvn/version "0.3.0"}}}
-
-           ;; Packaging and deployment
-           :mvn/artifact-id clj-pgcopy
-           :mvn/group-id    clj-pgcopy
-           :mvn/version     "0.1.2"
-           :jar/file-name   "cljpgcopy.jar"
-
-           :package {:replace-deps
-                     {com.github.seancorfield/depstar {:mvn/version "2.1.303"}}
-                     :exec-fn hf.depstar/jar
-                     :exec-args {:jar         :jar/file-name
-                                 :artifact-id :mvn/artifact-id
-                                 :group-id    :mvn/group-id
-                                 :version     :mvn/version
-                                 :sync-pom true}}
-           :deploy {:extra-deps {slipset/deps-deploy {:mvn/version "RELEASE"}}
-                    :exec-fn deps-deploy.deps-deploy/deploy
-                    :exec-args {:installer :remote
-                                :sign-releases? true
-                                :artifact :jar/file-name}}
-           :install {:extra-deps {slipset/deps-deploy {:mvn/version "RELEASE"}}
-                     :exec-fn deps-deploy.deps-deploy/deploy
-                     :exec-args {:installer :local
-                                 :artifact :jar/file-name}}}}
+           :build {:deps {io.github.clojure/tools.build {:git/tag "v0.10.7" :git/sha "573711e"}
+                          slipset/deps-deploy {:mvn/version "0.2.2"}}
+                   :ns-default build}}}
